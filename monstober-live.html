@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Wars: MonsTober — Live Vote</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Wet+Paint&family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0b0e08; --card:#12160d; --card2:#171c11; --border:#2b331e;
+  --ink:#eae5d4; --muted:#7d7f6d;
+  --green:#6fbf3f; --green-dim:#3d6b26; --green-glow:#9be86a;
+  --orange:#ff7a1a; --gold:#c9a227;
+}
+body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; min-height:100vh; }
+.bebas{ font-family:'Bebas Neue',sans-serif; }
+.barlow{ font-family:'Barlow Condensed',sans-serif; }
+
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 6px var(--green),0 0 14px #6fbf3f55;}50%{box-shadow:0 0 14px var(--green),0 0 32px #6fbf3f88;}}
+@keyframes goldGlow{0%,100%{box-shadow:0 0 6px var(--gold),0 0 14px #c9a22755;}50%{box-shadow:0 0 14px var(--gold),0 0 32px #c9a22788;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes noise{0%{opacity:.03;}33%{opacity:.05;}66%{opacity:.02;}100%{opacity:.04;}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.glow-green{ animation:pulseGlow 2s ease-in-out infinite; }
+.glow-gold{ animation:goldGlow 2s ease-in-out infinite; }
+.fade-up{ animation:fadeUp .4s ease-out forwards; }
+.blink{ animation:blink 1s step-end infinite; }
+@media (prefers-reduced-motion:reduce){ .glow-green,.glow-gold,.fade-up,.blink{ animation:none; } }
+
+.noise-layer{ position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.035; mix-blend-mode:overlay; animation:noise .12s steps(1) infinite; }
+.scanlines{ position:fixed; inset:0; pointer-events:none; z-index:9998;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+.vignette{ position:fixed; inset:0; pointer-events:none; z-index:9997;
+  background:radial-gradient(ellipse 120% 120% at 50% 50%, transparent 55%, rgba(0,0,0,0.45) 100%); }
+
+.wrap{ max-width:1100px; margin:0 auto; padding:0 clamp(1rem,4vw,3rem) 4rem; }
+
+/* header */
+.hero{ background:radial-gradient(ellipse 900px 400px at 50% -20%, rgba(111,191,63,0.12), transparent 60%), linear-gradient(180deg,#12160d 0%,#0b0e08 100%);
+  border-bottom:1px solid var(--border); padding:1.6rem clamp(1rem,4vw,3rem); }
+.hero-inner{ max-width:1100px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; }
+.title-row{ display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap; }
+.t-canvas{ font-size:clamp(2rem,6vw,3.6rem); line-height:.9; letter-spacing:.02em; color:var(--ink); text-transform:uppercase; }
+.t-wars{ font-size:clamp(2rem,6vw,3.6rem); line-height:.9; letter-spacing:.02em; color:var(--ink); text-transform:uppercase; }
+.t-mons{
+  font-family:'Rubik Wet Paint',cursive; font-weight:400; font-size:clamp(2rem,7vw,3.4rem); line-height:.9;
+  color:var(--green); text-shadow:2px 2px 0 rgba(0,0,0,0.5), 0 0 26px rgba(111,191,63,0.4);
+  -webkit-text-stroke:1px rgba(0,0,0,0.4); margin-left:.2rem;
+}
+.hero-sub{ color:var(--muted); font-size:.8rem; letter-spacing:.12em; font-weight:600; margin-top:.5rem; text-transform:uppercase; font-family:'Barlow Condensed',sans-serif; }
+.hero-right{ display:flex; flex-direction:column; align-items:flex-end; gap:.35rem; }
+.live-chip{ font-family:'Barlow Condensed',sans-serif; background:var(--green); color:#0b0e08; font-size:.65rem; font-weight:700; letter-spacing:.15em; padding:2px 8px; border-radius:2px; }
+.status-closed{ background:#1a1e13; color:var(--orange); border:1px solid #ff7a1a40; }
+.hero-meta{ color:var(--muted); font-size:.8rem; font-family:'Barlow Condensed',sans-serif; }
+.prize-badges{ display:flex; gap:.4rem; flex-wrap:wrap; justify-content:flex-end; }
+.prize-badge{ font-size:.8rem; letter-spacing:.08em; padding:2px 10px; border-radius:2px; font-family:'Bebas Neue',sans-serif; }
+.pb-1{ background:#ff7a1a18; border:1px solid #ff7a1a40; color:var(--orange); }
+.pb-2{ background:#1a1e13; border:1px solid var(--border); color:#a8a893; }
+.pb-3{ background:#1a1e13; border:1px solid var(--border); color:#7d7f6d; }
+.pb-4{ background:#1a1e13; border:1px solid var(--border); color:#5c5e4f; }
+
+/* tabs */
+.tabbar{ border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:100; backdrop-filter:blur(8px); }
+.tabbar-inner{ max-width:1100px; margin:0 auto; padding:0 clamp(.5rem,3vw,2rem); display:flex; overflow-x:auto; }
+.tab-btn{ font-family:'Bebas Neue',sans-serif; letter-spacing:.06em; font-size:1rem; padding:.6rem 1.1rem; color:#5c5e4f; border-bottom:2px solid transparent; cursor:pointer; transition:color .2s; white-space:nowrap; background:none; border-top:none; border-left:none; border-right:none; }
+.tab-btn:hover{ color:#a8a893; }
+.tab-active{ color:var(--green-glow)!important; border-bottom-color:var(--green)!important; }
+
+.section-head{ font-family:'Bebas Neue',sans-serif; letter-spacing:.08em; font-size:1.05rem; color:#8a8c78; margin:1.75rem 0 1rem; padding-bottom:.4rem; border-bottom:1px solid var(--border); }
+
+/* strip cards */
+.strip{ display:flex; gap:.75rem; margin:1.5rem 0; flex-wrap:wrap; }
+.strip-card{ background:var(--card); border:1px solid var(--border); border-radius:4px; padding:.7rem 1.2rem; display:flex; align-items:center; gap:.7rem; }
+.strip-num{ font-family:'Bebas Neue',sans-serif; font-size:1.6rem; }
+.strip-label{ font-family:'Barlow Condensed',sans-serif; color:#9c9e8a; font-size:.75rem; font-weight:700; letter-spacing:.1em; line-height:1.3; }
+
+/* artist grid */
+.artist-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
+.artist-card{ background:var(--card); border:1px solid var(--border); border-radius:4px; padding:1.25rem; transition:transform .2s,border-color .2s; }
+.artist-card:hover{ transform:translateY(-3px); border-color:#6fbf3f44; }
+.artist-card.is-voted{ border-color:var(--green); }
+.artist-top{ display:flex; align-items:flex-start; gap:.8rem; margin-bottom:1rem; }
+.avatar{ width:52px; height:52px; border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.avatar span{ font-family:'Bebas Neue',sans-serif; font-size:1.1rem; }
+.artist-name-input{ font-family:'Bebas Neue',sans-serif; font-size:1.15rem; letter-spacing:.02em; background:transparent; border:none; color:var(--ink); width:100%; outline:none; }
+.artist-name-input:focus{ color:var(--green-glow); }
+.artist-meta{ font-family:'Barlow Condensed',sans-serif; color:#5c5e4f; font-size:.72rem; letter-spacing:.04em; margin-top:2px; }
+.vote-btn{ font-family:'Bebas Neue',sans-serif; letter-spacing:.05em; font-size:.95rem; padding:.5rem 1rem; border-radius:2px; border:1px solid #6fbf3f50; background:transparent; color:var(--green-glow); cursor:pointer; transition:all .15s; width:100%; }
+.vote-btn:hover:not(:disabled){ background:var(--green); color:#0b0e08; }
+.vote-btn:disabled{ opacity:.4; cursor:not-allowed; }
+.voted-btn{ background:var(--green)!important; color:#0b0e08!important; border-color:var(--green)!important; opacity:1!important; cursor:default!important; }
+.entry-track{ background:#1a1e13; height:4px; border-radius:2px; margin-top:.7rem; overflow:hidden; }
+.entry-bar{ height:4px; border-radius:2px; transition:width .6s ease; }
+.entry-pct{ font-family:'Barlow Condensed',sans-serif; color:#6a6c5c; font-size:.7rem; margin-top:.3rem; text-align:right; }
+
+/* leaderboard */
+.rank-row{ display:flex; align-items:center; gap:1rem; background:var(--card); border:1px solid var(--border); border-radius:4px; padding:.9rem 1.2rem; margin-bottom:.6rem; }
+.rank-badge{ font-family:'Bebas Neue',sans-serif; font-size:1.4rem; width:2.2rem; height:2.2rem; display:flex; align-items:center; justify-content:center; border-radius:2px; flex-shrink:0; }
+.rb-1{ background:#c9a22720; color:var(--gold); border:1px solid #c9a22740; }
+.rb-2{ background:#6fbf3f20; color:var(--green-glow); border:1px solid #6fbf3f40; }
+.rb-other{ background:#1a1e13; color:#6a6c5c; border:1px solid var(--border); }
+.rank-name{ font-family:'Bebas Neue',sans-serif; font-size:1.05rem; flex-shrink:0; width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rank-track{ flex:1; background:#1a1e13; border-radius:2px; height:14px; overflow:hidden; }
+.rank-fill{ height:100%; background:linear-gradient(90deg,var(--green-dim),var(--green)); border-radius:2px; transition:width .5s ease; }
+.rank-count{ font-family:'Bebas Neue',sans-serif; color:var(--orange); width:40px; text-align:right; }
+
+/* judges */
+.judge-gate{ text-align:center; padding:3rem 1rem; }
+.pin-row{ display:flex; gap:.5rem; justify-content:center; margin-top:1rem; flex-wrap:wrap; }
+.pin-row input{ font-family:'Barlow Condensed',sans-serif; background:var(--card); border:1px solid var(--border); color:var(--ink); padding:.6rem 1rem; border-radius:2px; width:160px; text-align:center; letter-spacing:.08em; }
+.pin-row button{ font-family:'Bebas Neue',sans-serif; letter-spacing:.06em; background:var(--green); color:#0b0e08; border:none; padding:.6rem 1.4rem; border-radius:2px; cursor:pointer; }
+.pin-row button:hover{ background:var(--green-glow); }
+.pin-err{ color:var(--orange); font-size:.75rem; margin-top:.6rem; min-height:1em; font-family:'Barlow Condensed',sans-serif; }
+
+.judge-tabs{ display:flex; gap:.5rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+.judge-tab{ font-family:'Bebas Neue',sans-serif; letter-spacing:.05em; font-size:.9rem; padding:.5rem 1rem; border-radius:2px; border:1px solid var(--border); background:transparent; color:#6a6c5c; cursor:pointer; }
+.judge-tab.active{ color:var(--gold); border-color:#c9a22750; background:#c9a22712; }
+
+.score-block{ background:var(--card2); border:1px solid var(--border); border-radius:4px; padding:1rem 1.2rem; margin-bottom:.75rem; }
+.score-block-name{ font-family:'Bebas Neue',sans-serif; font-size:1.1rem; margin-bottom:.7rem; letter-spacing:.02em; }
+.score-fields{ display:grid; grid-template-columns:repeat(4,1fr); gap:.6rem; }
+.score-field label{ display:block; font-family:'Barlow Condensed',sans-serif; font-size:.65rem; color:#6a6c5c; text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+.score-field input{ width:100%; background:#0b0e08; border:1px solid var(--border); color:var(--ink); border-radius:2px; padding:.45rem; font-family:'Barlow Condensed',sans-serif; font-size:.95rem; text-align:center; }
+.score-field input:focus{ outline:none; border-color:var(--gold); }
+
+.admin-row{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--border); }
+.admin-btn{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:.8rem; padding:.5rem 1rem; background:transparent; border:1px solid #2a2f1f; color:#6a6c5c; border-radius:2px; cursor:pointer; }
+.admin-btn:hover{ color:#a8a893; border-color:#444a34; }
+.admin-btn.danger:hover{ color:var(--orange); border-color:#ff7a1a60; }
+
+.status-msg{ text-align:center; font-family:'Barlow Condensed',sans-serif; color:#6a6c5c; font-size:.8rem; margin-top:.8rem; min-height:1.2em; }
+.share-note{ text-align:center; color:#3d4030; font-size:.7rem; font-family:'Barlow Condensed',sans-serif; margin-top:.5rem; letter-spacing:.03em; }
+
+footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem); display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:.75rem; max-width:1100px; margin:2rem auto 0; }
+.foot-brand{ color:#4a4d3c; font-size:1rem; letter-spacing:.1em; font-family:'Bebas Neue',sans-serif; }
+.foot-rules{ color:#3a3d2e; font-size:.75rem; font-family:'Barlow',sans-serif; }
+</style>
+</head>
+<body>
+<div class="noise-layer"></div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="title-row">
+        <span class="bebas t-canvas">CANVAS</span><span class="bebas t-wars">WARS</span><span class="t-mons">MonsTober</span>
+      </div>
+      <div class="hero-sub">Live Illustrative Art Battle · Phoenix Phoodery · Medford, OR</div>
+    </div>
+    <div class="hero-right">
+      <div style="display:flex; align-items:center; gap:.5rem;">
+        <span id="liveChip" class="barlow live-chip blink">● LIVE</span>
+        <span class="barlow" style="color:#8a8c78; font-size:.8rem;">Sat, Oct 3, 2026 · 11AM–5PM</span>
+      </div>
+      <div class="hero-meta">4 Artists · 18"×24" Canvas · Black &amp; White Only</div>
+      <div class="prize-badges">
+        <span class="prize-badge pb-1">1ST · $100</span>
+        <span class="prize-badge pb-2">2ND · $75</span>
+        <span class="prize-badge pb-3">3RD · $50</span>
+        <span class="prize-badge pb-4">4TH · $25</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tabbar-inner">
+    <button class="tab-btn tab-active" data-tab="vote">🎨 LIVE VOTE</button>
+    <button class="tab-btn" data-tab="leaders">🏆 LEADERBOARD</button>
+    <button class="tab-btn" data-tab="judges">⚖️ JUDGES</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- VOTE TAB -->
+  <div id="panel-vote">
+    <div class="strip">
+      <div class="strip-card">
+        <span class="bebas strip-num" style="color:var(--orange);">2</span>
+        <span class="barlow strip-label">GUEST<br>JUDGES</span>
+      </div>
+      <div class="strip-card">
+        <span class="bebas strip-num" style="color:var(--gold);">LIVE</span>
+        <span class="barlow strip-label">AUDIENCE<br>VOTE VIA APP</span>
+      </div>
+      <div class="strip-card">
+        <span class="bebas strip-num" id="totalVotesNum" style="color:var(--green-glow);">0</span>
+        <span class="barlow strip-label">VOTES<br>CAST</span>
+      </div>
+    </div>
+
+    <div class="section-head">COMPETING ARTISTS</div>
+    <div id="artistGrid" class="artist-grid"></div>
+    <div id="voteStatus" class="status-msg"></div>
+    <div class="share-note">Votes are shared live with everyone viewing this page · one vote per device</div>
+  </div>
+
+  <!-- LEADERBOARD TAB -->
+  <div id="panel-leaders" style="display:none;">
+    <div class="section-head">AUDIENCE LEADERBOARD</div>
+    <div id="leaderboard"></div>
+  </div>
+
+  <!-- JUDGES TAB -->
+  <div id="panel-judges" style="display:none;">
+    <div id="judgeGate" class="judge-gate">
+      <div class="bebas" style="font-size:1.3rem; color:#8a8c78; letter-spacing:.05em;">JUDGE ACCESS REQUIRED</div>
+      <div class="pin-row">
+        <input id="pinInput" type="password" placeholder="ENTER PIN" />
+        <button id="pinSubmit">UNLOCK</button>
+      </div>
+      <div id="pinError" class="pin-err"></div>
+    </div>
+
+    <div id="judgePanel" style="display:none;">
+      <div class="section-head">SCORE THE ARTISTS</div>
+      <div class="judge-tabs" id="judgeSelect"></div>
+      <div id="scoreFields"></div>
+
+      <div class="admin-row" id="adminPanel">
+        <button class="admin-btn" id="toggleVotingBtn">OPEN / CLOSE VOTING</button>
+        <button class="admin-btn" id="editNamesBtn">EDIT ARTIST NAMES</button>
+        <button class="admin-btn danger" id="resetBtn">RESET VOTES &amp; SCORES</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="foot-brand">CANVASWARS · MONSTOBER · MEDFORD, OR · 2026</div>
+  <div class="foot-rules">$25 artist entry, returned via prize payout · Black &amp; white only · All materials supplied</div>
+</footer>
+
+<script>
+const STORAGE_KEY = 'monstober:live-state-v3';
+const MY_VOTE_KEY = 'monstober:my-vote-v3';
+const JUDGE_PIN = 'MONSTER';
+const JUDGES = ['Judge A', 'Judge B'];
+const CRITERIA = [
+  { key:'skill', label:'Skill' },
+  { key:'creativity', label:'Creativity' },
+  { key:'impact', label:'Impact' },
+  { key:'time', label:'Use of Time' }
+];
+const AVATAR_COLORS = ['#8fd15a','#ff9d4d','#c9a227','#5fb8a3'];
+
+let state = null;
+let myVote = null;
+let judgeUnlocked = false;
+let namesEditable = false;
+let activeJudge = JUDGES[0];
+let editingScores = false;
+
+function defaultState(){
+  return {
+    votingOpen: true,
+    artists: [
+      { id:'a1', name:'Artist 1' },
+      { id:'a2', name:'Artist 2' },
+      { id:'a3', name:'Artist 3' },
+      { id:'a4', name:'Artist 4' }
+    ],
+    votes: { a1:0, a2:0, a3:0, a4:0 },
+    judgeScores: {}
+  };
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    state = (res && res.value) ? JSON.parse(res.value) : defaultState();
+    if(!res || !res.value) await saveState();
+  } catch(e){
+    state = defaultState();
+    try{ await saveState(); } catch(e2){ console.error('init save failed', e2); }
+  }
+}
+async function saveState(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), true); }
+  catch(e){ console.error('save failed', e); }
+}
+async function loadMyVote(){
+  try{
+    const res = await window.storage.get(MY_VOTE_KEY, false);
+    myVote = (res && res.value) ? res.value : null;
+  } catch(e){ myVote = null; }
+}
+async function saveMyVote(id){
+  myVote = id;
+  try{ await window.storage.set(MY_VOTE_KEY, id, false); }
+  catch(e){ console.error('vote save failed', e); }
+}
+
+function totalVotes(){ return state.artists.reduce((s,a)=> s+(state.votes[a.id]||0), 0); }
+function judgeTotal(judge, artistId){
+  const s = (state.judgeScores[judge] && state.judgeScores[judge][artistId]) || {};
+  return CRITERIA.reduce((sum,c)=> sum + (Number(s[c.key])||0), 0);
+}
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function renderLiveChip(){
+  const chip = document.getElementById('liveChip');
+  if(state.votingOpen){
+    chip.textContent = '● LIVE';
+    chip.className = 'barlow live-chip blink';
+  } else {
+    chip.textContent = 'VOTING CLOSED';
+    chip.className = 'barlow live-chip status-closed';
+  }
+}
+
+function renderArtistGrid(){
+  document.getElementById('totalVotesNum').textContent = totalVotes();
+  const grid = document.getElementById('artistGrid');
+  grid.innerHTML = '';
+  const total = totalVotes();
+  state.artists.forEach((a,i)=>{
+    const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    const v = state.votes[a.id] || 0;
+    const pct = total>0 ? Math.round((v/total)*100) : 0;
+    const isVoted = myVote === a.id;
+
+    const card = document.createElement('div');
+    card.className = 'artist-card fade-up' + (isVoted ? ' is-voted' : '');
+    card.style.animationDelay = (i*0.06)+'s';
+
+    const top = document.createElement('div');
+    top.className = 'artist-top';
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.style.background = `linear-gradient(135deg,${color}33,${color}11)`;
+    avatar.style.border = `1px solid ${color}44`;
+    const initials = (a.name||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??';
+    avatar.innerHTML = `<span style="color:${color}">${initials}</span>`;
+    const nameWrap = document.createElement('div');
+    nameWrap.style.flex = '1';
+    const nameInput = document.createElement('input');
+    nameInput.className = 'artist-name-input';
+    nameInput.value = a.name;
+    nameInput.readOnly = !namesEditable;
+    nameInput.addEventListener('change', async ()=>{
+      a.name = nameInput.value.trim() || a.name;
+      await saveState(); renderAll();
+    });
+    const meta = document.createElement('div');
+    meta.className = 'artist-meta';
+    meta.textContent = 'MONSTER · SHARPIE + ACRYLIC';
+    nameWrap.appendChild(nameInput);
+    nameWrap.appendChild(meta);
+    top.appendChild(avatar);
+    top.appendChild(nameWrap);
+
+    const btn = document.createElement('button');
+    btn.className = 'vote-btn' + (isVoted ? ' voted-btn' : '');
+    btn.textContent = isVoted ? '✓ VOTED' : (!state.votingOpen ? 'VOTING CLOSED' : 'VOTE');
+    btn.disabled = !state.votingOpen || !!myVote;
+    btn.addEventListener('click', ()=> castVote(a.id));
+
+    const track = document.createElement('div');
+    track.className = 'entry-track';
+    const fill = document.createElement('div');
+    fill.className = 'entry-bar';
+    fill.style.width = pct+'%';
+    fill.style.background = color;
+    track.appendChild(fill);
+    const pctLabel = document.createElement('div');
+    pctLabel.className = 'entry-pct barlow';
+    pctLabel.textContent = `${v} VOTES · ${pct}%`;
+
+    card.appendChild(top);
+    card.appendChild(btn);
+    card.appendChild(track);
+    card.appendChild(pctLabel);
+    grid.appendChild(card);
+  });
+}
+
+function renderLeaderboard(){
+  const wrap = document.getElementById('leaderboard');
+  wrap.innerHTML = '';
+  const total = totalVotes();
+  const sorted = [...state.artists].sort((x,y)=> (state.votes[y.id]||0)-(state.votes[x.id]||0));
+  sorted.forEach((a,i)=>{
+    const count = state.votes[a.id]||0;
+    const pct = total>0 ? Math.round((count/total)*100) : 0;
+    const row = document.createElement('div');
+    row.className = 'rank-row fade-up';
+    row.style.animationDelay = (i*0.05)+'s';
+    const badgeClass = i===0 ? 'rb-1' : i===1 ? 'rb-2' : 'rb-other';
+    row.innerHTML = `
+      <div class="bebas rank-badge ${badgeClass}">${i+1}</div>
+      <div class="bebas rank-name">${escapeHtml(a.name)}</div>
+      <div class="rank-track"><div class="rank-fill" style="width:${pct}%"></div></div>
+      <div class="rank-count">${count}</div>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+function renderJudgeSelect(){
+  const wrap = document.getElementById('judgeSelect');
+  wrap.innerHTML = '';
+  JUDGES.forEach(j=>{
+    const tab = document.createElement('button');
+    tab.className = 'judge-tab' + (activeJudge===j ? ' active':'');
+    tab.textContent = j.toUpperCase();
+    tab.addEventListener('click', ()=>{
+      activeJudge = j;
+      document.querySelectorAll('.judge-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      renderScoreFields();
+    });
+    wrap.appendChild(tab);
+  });
+}
+
+function renderScoreFields(){
+  const wrap = document.getElementById('scoreFields');
+  wrap.innerHTML = '';
+  state.artists.forEach(a=>{
+    const block = document.createElement('div');
+    block.className = 'score-block';
+    const label = document.createElement('div');
+    label.className = 'score-block-name bebas';
+    label.textContent = a.name;
+    block.appendChild(label);
+
+    const fields = document.createElement('div');
+    fields.className = 'score-fields';
+    CRITERIA.forEach(c=>{
+      const fw = document.createElement('div');
+      fw.className = 'score-field';
+      const lbl = document.createElement('label');
+      lbl.textContent = c.label;
+      const input = document.createElement('input');
+      input.type = 'number'; input.min='0'; input.max='10';
+      const existing = (state.judgeScores[activeJudge] && state.judgeScores[activeJudge][a.id]) || {};
+      input.value = existing[c.key] != null ? existing[c.key] : '';
+      input.addEventListener('focus', ()=>{ editingScores = true; });
+      input.addEventListener('blur', async ()=>{
+        editingScores = false;
+        let val = Number(input.value);
+        if(isNaN(val)) val = 0;
+        val = Math.max(0, Math.min(10, val));
+        input.value = val;
+        if(!state.judgeScores[activeJudge]) state.judgeScores[activeJudge] = {};
+        if(!state.judgeScores[activeJudge][a.id]) state.judgeScores[activeJudge][a.id] = {};
+        state.judgeScores[activeJudge][a.id][c.key] = val;
+        await saveState();
+      });
+      fw.appendChild(lbl); fw.appendChild(input);
+      fields.appendChild(fw);
+    });
+    block.appendChild(fields);
+    wrap.appendChild(block);
+  });
+}
+
+function renderAll(){
+  renderLiveChip();
+  renderArtistGrid();
+  renderLeaderboard();
+  if(judgeUnlocked){ renderJudgeSelect(); renderScoreFields(); }
+}
+
+async function castVote(id){
+  if(!state.votingOpen || myVote) return;
+  state.votes[id] = (state.votes[id]||0) + 1;
+  await saveState();
+  await saveMyVote(id);
+  document.getElementById('voteStatus').textContent = 'Vote counted — thanks for voting.';
+  renderAll();
+}
+
+/* tabs */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+    ['vote','leaders','judges'].forEach(t=>{
+      document.getElementById('panel-'+t).style.display = (t===btn.dataset.tab) ? 'block' : 'none';
+    });
+  });
+});
+
+/* judge pin */
+document.getElementById('pinSubmit').addEventListener('click', unlockJudge);
+document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') unlockJudge(); });
+function unlockJudge(){
+  const val = document.getElementById('pinInput').value.trim().toUpperCase();
+  if(val === JUDGE_PIN){
+    judgeUnlocked = true;
+    document.getElementById('judgeGate').style.display = 'none';
+    document.getElementById('judgePanel').style.display = 'block';
+    renderJudgeSelect(); renderScoreFields();
+  } else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN.';
+  }
+}
+
+document.getElementById('toggleVotingBtn').addEventListener('click', async ()=>{
+  state.votingOpen = !state.votingOpen;
+  await saveState(); renderAll();
+});
+document.getElementById('editNamesBtn').addEventListener('click', ()=>{
+  namesEditable = !namesEditable;
+  document.getElementById('editNamesBtn').textContent = namesEditable ? 'DONE EDITING NAMES' : 'EDIT ARTIST NAMES';
+  renderArtistGrid();
+});
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(!confirm('Reset all votes and judge scores? This cannot be undone.')) return;
+  state.votes = { a1:0, a2:0, a3:0, a4:0 };
+  state.judgeScores = {};
+  await saveState(); renderAll();
+});
+
+async function init(){
+  await loadState();
+  await loadMyVote();
+  renderAll();
+  setInterval(async ()=>{
+    if(editingScores) return;
+    await loadState();
+    renderAll();
+  }, 4000);
+}
+init();
+</script>
+</body>
+</html>
