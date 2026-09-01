@@ -89,6 +89,31 @@ body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; m
 .avatar span{ font-family:'Bebas Neue',sans-serif; font-size:1.1rem; }
 .artist-name-input{ font-family:'Bebas Neue',sans-serif; font-size:1.15rem; letter-spacing:.02em; background:transparent; border:none; color:var(--ink); width:100%; outline:none; }
 .artist-name-input:focus{ color:var(--green-glow); }
+
+/* Clickable Artist Link & Subinfo */
+.artist-name-link {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: .02em;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color .2s ease;
+  display: inline-block;
+}
+.artist-name-link:hover {
+  color: var(--green-glow);
+  text-decoration: underline;
+}
+.artist-subinfo {
+  font-family: 'Barlow Condensed', sans-serif;
+  color: var(--green);
+  font-size: .78rem;
+  letter-spacing: .05em;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
 .artist-meta{ font-family:'Barlow Condensed',sans-serif; color:#5c5e4f; font-size:.72rem; letter-spacing:.04em; margin-top:2px; }
 .vote-btn{ font-family:'Bebas Neue',sans-serif; letter-spacing:.05em; font-size:.95rem; padding:.5rem 1rem; border-radius:2px; border:1px solid #6fbf3f50; background:transparent; color:var(--green-glow); cursor:pointer; transition:all .15s; width:100%; }
 .vote-btn:hover:not(:disabled){ background:var(--green); color:#0b0e08; }
@@ -241,8 +266,8 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
 </footer>
 
 <script>
-const STORAGE_KEY = 'monstober:live-state-v3';
-const MY_VOTE_KEY = 'monstober:my-vote-v3';
+const STORAGE_KEY = 'monstober:live-state-v4';
+const MY_VOTE_KEY = 'monstober:my-vote-v4';
 const JUDGE_PIN = 'MONSTER';
 const JUDGES = ['Judge A', 'Judge B'];
 const CRITERIA = [
@@ -264,10 +289,10 @@ function defaultState(){
   return {
     votingOpen: true,
     artists: [
-      { id:'30x20B', name:'MarkJuber' },
-      { id:'30x20B', name:'PaulyKnipfer' },
-      { id:'18x24B', name:'BernardLawrence' },
-      { id:'30x20B', name:'RoosterInkk' }
+      { id:'a1', name:'MarkJuber', info:'Graffiti & Mixed Media', url:'https://instagram.com' },
+      { id:'a2', name:'PaulyKnipfer', info:'Illustrator & Muralist', url:'https://instagram.com' },
+      { id:'a3', name:'BernardLawrence', info:'Fine Art & Ink', url:'https://instagram.com' },
+      { id:'a4', name:'RoosterInkk', info:'Tattoo & Fine Line', url:'https://instagram.com' }
     ],
     votes: { a1:0, a2:0, a3:0, a4:0 },
     judgeScores: {}
@@ -341,21 +366,41 @@ function renderArtistGrid(){
     avatar.style.border = `1px solid ${color}44`;
     const initials = (a.name||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??';
     avatar.innerHTML = `<span style="color:${color}">${initials}</span>`;
+
     const nameWrap = document.createElement('div');
     nameWrap.style.flex = '1';
-    const nameInput = document.createElement('input');
-    nameInput.className = 'artist-name-input';
-    nameInput.value = a.name;
-    nameInput.readOnly = !namesEditable;
-    nameInput.addEventListener('change', async ()=>{
-      a.name = nameInput.value.trim() || a.name;
-      await saveState(); renderAll();
-    });
+
+    if (namesEditable) {
+      const nameInput = document.createElement('input');
+      nameInput.className = 'artist-name-input';
+      nameInput.value = a.name;
+      nameInput.addEventListener('change', async ()=>{
+        a.name = nameInput.value.trim() || a.name;
+        await saveState(); renderAll();
+      });
+      nameWrap.appendChild(nameInput);
+    } else {
+      const nameLink = document.createElement('a');
+      nameLink.className = 'artist-name-link';
+      nameLink.textContent = a.name;
+      nameLink.href = a.url || '#';
+      nameLink.target = '_blank';
+      nameLink.rel = 'noopener noreferrer';
+      nameWrap.appendChild(nameLink);
+    }
+
+    if (a.info) {
+      const subInfo = document.createElement('div');
+      subInfo.className = 'artist-subinfo';
+      subInfo.textContent = a.info;
+      nameWrap.appendChild(subInfo);
+    }
+
     const meta = document.createElement('div');
     meta.className = 'artist-meta';
     meta.textContent = 'MONSTER · SHARPIE + ACRYLIC';
-    nameWrap.appendChild(nameInput);
     nameWrap.appendChild(meta);
+
     top.appendChild(avatar);
     top.appendChild(nameWrap);
 
