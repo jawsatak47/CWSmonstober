@@ -65,7 +65,7 @@ body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; m
 /* tabs */
 .tabbar{ border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:100; backdrop-filter:blur(8px); }
 .tabbar-inner{ max-width:1250px; margin:0 auto; padding:0 clamp(.5rem,3vw,2rem); display:flex; overflow-x:auto; }
-.tab-btn{ font-family:'Bebas Neue',sans-serif; letter-spacing:.06em; font-size:1rem; padding:.6rem 1.1rem; color:#5c5e4f; border-bottom:2px solid transparent; cursor:pointer; transition:color .2s; white-space:nowrap; background:none; border-top:none; border-left:none; border-right:none; }
+.tab-btn{ font-family:'Bebas Neue',sans-serif; letter-spacing:.06em; font-size:1rem; padding:.6rem 1.1rem; color:#5c5e4f; border-bottom:2px solid transparent; cursor:pointer; transition:color .2s; white-space:nowrap; background:none; border-top:none; border-left:none; border-right:none; text-decoration:none; display:inline-block; }
 .tab-btn:hover{ color:#a8a893; }
 .tab-active{ color:var(--green-glow)!important; border-bottom-color:var(--green)!important; }
 
@@ -203,6 +203,7 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
     <button class="tab-btn tab-active" data-tab="vote">🎨 LIVE VOTE</button>
     <button class="tab-btn" data-tab="leaders">🏆 LEADERBOARD</button>
     <button class="tab-btn" data-tab="judges">⚖️ JUDGES</button>
+    <a class="tab-btn" href="https://jawsatak47.github.io/MonsTober-stage1/" target="_blank" rel="noopener noreferrer">ℹ EVENT INFO</a>
   </div>
 </div>
 
@@ -531,9 +532,9 @@ async function castVote(id){
 }
 
 /* tabs */
-document.querySelectorAll('.tab-btn').forEach(btn=>{
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('tab-active'));
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.classList.remove('tab-active'));
     btn.classList.add('tab-active');
     ['vote','leaders','judges'].forEach(t=>{
       document.getElementById('panel-'+t).style.display = (t===btn.dataset.tab) ? 'block' : 'none';
