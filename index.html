@@ -609,6 +609,20 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
   }
 
   init();
+
+  document.getElementById('resetBtn').addEventListener('click', async ()=>{
+    if(!confirm('Reset all votes and judge scores? This cannot be undone.')) return;
+    state.votes = { a1:0, a2:0, a3:0, a4:0, a5:0 };
+    state.judgeScores = {};
+    
+    // Clear local vote tracking on this device
+    localStorage.removeItem(MY_VOTE_KEY);
+    myVote = null;
+
+    await saveState(); 
+    renderAll();
+  });
+  
 </script>
 </body>
 </html>
