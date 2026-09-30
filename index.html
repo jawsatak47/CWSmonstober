@@ -147,6 +147,15 @@ body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; m
 .judge-tab{ font-family:'Bebas Neue',sans-serif; letter-spacing:.05em; font-size:.9rem; padding:.5rem 1rem; border-radius:2px; border:1px solid var(--border); background:transparent; color:#6a6c5c; cursor:pointer; }
 .judge-tab.active{ color:var(--gold); border-color:#c9a22750; background:#c9a22712; }
 
+/* Judge Rank Selection Styling */
+.judge-rank-box{ background:var(--card2); border:1px solid var(--border); border-radius:4px; padding:1.2rem; margin-bottom:1.5rem; }
+.judge-rank-box h3{ font-family:'Bebas Neue',sans-serif; font-size:1.2rem; color:var(--gold); letter-spacing:.05em; margin-bottom:.8rem; }
+.rank-select-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:.8rem; }
+@media (max-width: 768px){ .rank-select-grid{ grid-template-columns:1fr; } }
+.rank-select-field label{ display:block; font-family:'Barlow Condensed',sans-serif; font-size:.8rem; color:var(--ink); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; font-weight:600; }
+.rank-select-field select{ width:100%; background:#0b0e08; border:1px solid var(--border); color:var(--ink); border-radius:2px; padding:.55rem; font-family:'Barlow Condensed',sans-serif; font-size:.95rem; outline:none; }
+.rank-select-field select:focus{ border-color:var(--gold); }
+
 .score-block{ background:var(--card2); border:1px solid var(--border); border-radius:4px; padding:1rem 1.2rem; margin-bottom:.75rem; }
 .score-block-name{ font-family:'Bebas Neue',sans-serif; font-size:1.1rem; margin-bottom:.7rem; letter-spacing:.02em; }
 .score-fields{ display:grid; grid-template-columns:repeat(4,1fr); gap:.6rem; }
@@ -221,7 +230,7 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
       </div>
       <div class="strip-card">
         <span class="bebas strip-num" id="totalVotesNum" style="color:var(--green-glow);">0</span>
-        <span class="barlow strip-label">VOTES<br>CAST</span>
+        <span class="barlow strip-label">TOTAL<br>POINTS</span>
       </div>
     </div>
 
@@ -233,7 +242,7 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
 
   <!-- LEADERBOARD TAB -->
   <div id="panel-leaders" style="display:none;">
-    <div class="section-head">AUDIENCE LEADERBOARD</div>
+    <div class="section-head">AUDIENCE &amp; JUDGE LEADERBOARD</div>
     <div id="leaderboard"></div>
   </div>
 
@@ -249,8 +258,29 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
     </div>
 
     <div id="judgePanel" style="display:none;">
-      <div class="section-head">SCORE THE ARTISTS</div>
+      <div class="section-head">JUDGE PANEL</div>
       <div class="judge-tabs" id="judgeSelect"></div>
+      
+      <!-- Top 3 Judge Votes -->
+      <div class="judge-rank-box">
+        <h3>👑 JUDGE TOP 3 RANKINGS (ADDS TO LIVE TALLY)</h3>
+        <div class="rank-select-grid">
+          <div class="rank-select-field">
+            <label>1st Place (+3 Points)</label>
+            <select id="judgeRank1"><option value="">-- Select 1st Place --</option></select>
+          </div>
+          <div class="rank-select-field">
+            <label>2nd Place (+2 Points)</label>
+            <select id="judgeRank2"><option value="">-- Select 2nd Place --</option></select>
+          </div>
+          <div class="rank-select-field">
+            <label>3rd Place (+1 Point)</label>
+            <select id="judgeRank3"><option value="">-- Select 3rd Place --</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head">SCORE THE ARTISTS (0 - 10)</div>
       <div id="scoreFields"></div>
 
       <div class="admin-row" id="adminPanel">
@@ -273,7 +303,6 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // Your Firebase Configuration from your Screenshot
   const firebaseConfig = {
     apiKey: "AiZaSyDgJfvykgrSXkuWo_RqKwzBs_61x1JMJXI",
     authDomain: "cws1-5bb29.firebaseapp.com",
@@ -289,8 +318,8 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
   const docRef = doc(db, "monstober2026", "liveState");
 
   const MY_VOTE_KEY = 'monstober:my-vote-v5';
-  const JUDGE_PIN = 'MONSTER';
-  const JUDGES = ['Judge A', 'Judge B'];
+  const JUDGE_PIN = 'CW2';
+  const JUDGES = ['Judge A', 'Judge B', 'Judge C'];
   const CRITERIA = [
     { key:'skill', label:'Skill' },
     { key:'creativity', label:'Creativity' },
@@ -305,6 +334,7 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
   let namesEditable = false;
   let activeJudge = JUDGES[0];
   let editingScores = false;
+  let currentResetToken = null;
 
   function defaultState(){
     return {
@@ -317,7 +347,9 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
         { id:'a5', name:'Faith Moody', info:'30x20 Black canvas', url:'https://www.facebook.com/faith.moody.3344913' }
       ],
       votes: { a1:0, a2:0, a3:0, a4:0, a5:0 },
-      judgeScores: {}
+      judgeScores: {},
+      judgeRanks: {},
+      resetToken: Date.now()
     };
   }
 
@@ -342,7 +374,24 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
     } catch(e){ console.error('vote save failed', e); }
   }
 
-  function totalVotes(){ return state.artists.reduce((s,a)=> s+(state.votes[a.id]||0), 0); }
+  // Calculate total points for an artist (Audience Votes + Judge Rank Bonus Points)
+  function artistTotalPoints(artistId){
+    const audienceVotes = state.votes[artistId] || 0;
+    let judgeBonus = 0;
+    if (state.judgeRanks) {
+      Object.values(state.judgeRanks).forEach(ranks => {
+        if (ranks.rank1 === artistId) judgeBonus += 3;
+        if (ranks.rank2 === artistId) judgeBonus += 2;
+        if (ranks.rank3 === artistId) judgeBonus += 1;
+      });
+    }
+    return audienceVotes + judgeBonus;
+  }
+
+  function totalVotes(){ 
+    return state.artists.reduce((s,a)=> s + artistTotalPoints(a.id), 0); 
+  }
+
   function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
   function renderLiveChip(){
@@ -363,7 +412,7 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
     const total = totalVotes();
     state.artists.forEach((a,i)=>{
       const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
-      const v = state.votes[a.id] || 0;
+      const v = artistTotalPoints(a.id);
       const pct = total>0 ? Math.round((v/total)*100) : 0;
       const isVoted = myVote === a.id;
 
@@ -432,7 +481,7 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
       track.appendChild(fill);
       const pctLabel = document.createElement('div');
       pctLabel.className = 'entry-pct barlow';
-      pctLabel.textContent = `${v} VOTES · ${pct}%`;
+      pctLabel.textContent = `${v} PTS · ${pct}%`;
 
       card.appendChild(top);
       card.appendChild(btn);
@@ -446,9 +495,9 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
     const wrap = document.getElementById('leaderboard');
     wrap.innerHTML = '';
     const total = totalVotes();
-    const sorted = [...state.artists].sort((x,y)=> (state.votes[y.id]||0)-(state.votes[x.id]||0));
+    const sorted = [...state.artists].sort((x,y)=> artistTotalPoints(y.id) - artistTotalPoints(x.id));
     sorted.forEach((a,i)=>{
-      const count = state.votes[a.id]||0;
+      const count = artistTotalPoints(a.id);
       const pct = total>0 ? Math.round((count/total)*100) : 0;
       const row = document.createElement('div');
       row.className = 'rank-row fade-up';
@@ -458,7 +507,7 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
         <div class="bebas rank-badge ${badgeClass}">${i+1}</div>
         <div class="bebas rank-name">${escapeHtml(a.name)}</div>
         <div class="rank-track"><div class="rank-fill" style="width:${pct}%"></div></div>
-        <div class="rank-count">${count}</div>
+        <div class="rank-count">${count} PTS</div>
       `;
       wrap.appendChild(row);
     });
@@ -475,9 +524,33 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
         activeJudge = j;
         document.querySelectorAll('.judge-tab').forEach(t=>t.classList.remove('active'));
         tab.classList.add('active');
+        renderJudgeRankings();
         renderScoreFields();
       });
       wrap.appendChild(tab);
+    });
+  }
+
+  function renderJudgeRankings(){
+    const currentRanks = (state.judgeRanks && state.judgeRanks[activeJudge]) || {};
+    ['1', '2', '3'].forEach(rNum => {
+      const select = document.getElementById(`judgeRank${rNum}`);
+      select.innerHTML = `<option value="">-- Select ${rNum === '1' ? '1st (+3 pts)' : rNum === '2' ? '2nd (+2 pts)' : '3rd (+1 pt)'} --</option>`;
+      state.artists.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.name;
+        if (currentRanks[`rank${rNum}`] === a.id) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      select.onchange = async () => {
+        if(!state.judgeRanks) state.judgeRanks = {};
+        if(!state.judgeRanks[activeJudge]) state.judgeRanks[activeJudge] = {};
+        state.judgeRanks[activeJudge][`rank${rNum}`] = select.value;
+        await saveState();
+        renderAll();
+      };
     });
   }
 
@@ -528,7 +601,11 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
     renderLiveChip();
     renderArtistGrid();
     renderLeaderboard();
-    if(judgeUnlocked){ renderJudgeSelect(); renderScoreFields(); }
+    if(judgeUnlocked){ 
+      renderJudgeSelect(); 
+      renderJudgeRankings();
+      renderScoreFields(); 
+    }
   }
 
   async function castVote(id){
@@ -560,7 +637,9 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
       judgeUnlocked = true;
       document.getElementById('judgeGate').style.display = 'none';
       document.getElementById('judgePanel').style.display = 'block';
-      renderJudgeSelect(); renderScoreFields();
+      renderJudgeSelect(); 
+      renderJudgeRankings();
+      renderScoreFields();
     } else {
       document.getElementById('pinError').textContent = 'Incorrect PIN.';
     }
@@ -580,27 +659,44 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
     if(!confirm('Reset all votes and judge scores? This cannot be undone.')) return;
     state.votes = { a1:0, a2:0, a3:0, a4:0, a5:0 };
     state.judgeScores = {};
-    await saveState(); renderAll();
+    state.judgeRanks = {};
+    state.resetToken = Date.now();
+    
+    localStorage.removeItem(MY_VOTE_KEY);
+    myVote = null;
+
+    await saveState(); 
+    renderAll();
   });
 
   /* Initialization */
   async function init(){
     loadMyVote();
     
-    // Read or set initial state in Firestore
     const snap = await getDoc(docRef);
     if (!snap.exists()) {
       state = defaultState();
       await setDoc(docRef, state);
     } else {
       state = snap.data();
+      if(!state.judgeRanks) state.judgeRanks = {};
     }
+    
+    currentResetToken = state.resetToken || null;
     renderAll();
 
-    // Listen live for changes across devices!
     onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        state = docSnap.data();
+        const newData = docSnap.data();
+
+        if (newData.resetToken && newData.resetToken !== currentResetToken) {
+          currentResetToken = newData.resetToken;
+          localStorage.removeItem(MY_VOTE_KEY);
+          myVote = null;
+        }
+
+        state = newData;
+        if(!state.judgeRanks) state.judgeRanks = {};
         if (!editingScores) {
           renderAll();
         }
@@ -609,20 +705,6 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
   }
 
   init();
-
-  document.getElementById('resetBtn').addEventListener('click', async ()=>{
-    if(!confirm('Reset all votes and judge scores? This cannot be undone.')) return;
-    state.votes = { a1:0, a2:0, a3:0, a4:0, a5:0 };
-    state.judgeScores = {};
-    
-    // Clear local vote tracking on this device
-    localStorage.removeItem(MY_VOTE_KEY);
-    myVote = null;
-
-    await saveState(); 
-    renderAll();
-  });
-  
 </script>
 </body>
 </html>
