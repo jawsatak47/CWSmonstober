@@ -256,18 +256,24 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
 
 <div class="tabbar">
   <div class="tabbar-inner">
-    <button class="tab-btn tab-active" data-tab="vote">🎨 LIVE VOTE</button>
+    <button class="tab-btn tab-active" data-tab="gallery">📸 PHOTOS</button>
+    <button class="tab-btn" data-tab="vote">🎨 LIVE VOTE</button>
     <button class="tab-btn" data-tab="leaders">🏆 LEADERBOARD</button>
-    <button class="tab-btn" data-tab="gallery">📸 PHOTOS</button>
-    <button class="tab-btn" data-tab="judges">⚖️️ JUDGES</button>
+    <button class="tab-btn" data-tab="judges">⚖ JUDGES</button>
     <a class="tab-btn" href="https://jawsatak47.github.io/MonsTober-stage1/" target="_blank" rel="noopener noreferrer">ℹ EVENT INFO</a>
   </div>
 </div>
 
 <div class="wrap">
 
+  <!-- EVENT PHOTOS TAB (DEFAULT MAIN TAB) -->
+  <div id="panel-gallery">
+    <div class="section-head">EVENT GALLERY &amp; HIGHLIGHTS</div>
+    <div id="eventGallery" class="gallery-grid"></div>
+  </div>
+
   <!-- VOTE TAB -->
-  <div id="panel-vote">
+  <div id="panel-vote" style="display:none;">
     <div class="strip">
       <div class="strip-card">
         <span class="bebas strip-num" style="color:var(--orange);">3</span>
@@ -293,12 +299,6 @@ footer{ border-top:1px solid var(--border); padding:1.25rem clamp(1rem,4vw,3rem)
   <div id="panel-leaders" style="display:none;">
     <div class="section-head">AUDIENCE &amp; JUDGE LEADERBOARD</div>
     <div id="leaderboard"></div>
-  </div>
-
-  <!-- EVENT PHOTOS TAB -->
-  <div id="panel-gallery" style="display:none;">
-    <div class="section-head">EVENT GALLERY &amp; HIGHLIGHTS</div>
-    <div id="eventGallery" class="gallery-grid"></div>
   </div>
 
   <!-- JUDGES TAB -->
