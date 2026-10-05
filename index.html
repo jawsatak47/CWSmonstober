@@ -145,28 +145,31 @@ body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; m
 .gallery-card:hover img{ transform:scale(1.04); }
 .gallery-caption{ padding:.6rem .8rem; font-family:'Barlow Condensed',sans-serif; color:var(--ink); font-size:.85rem; background:var(--card2); border-top:1px solid var(--border); margin-top:auto; }
 
-/* Lightbox Modal — Uncropped Aspect Ratio Scaled Fit */
+/* Lightbox Modal — Proportional Uncropped Scaling */
 .lightbox-overlay {
   position: fixed; inset: 0; z-index: 10000;
   background: rgba(5, 7, 4, 0.95); backdrop-filter: blur(8px);
   display: none; align-items: center; justify-content: center;
-  padding: 1.5rem; overflow: auto; cursor: zoom-out;
+  padding: 1.5rem; overflow: hidden; cursor: zoom-out;
 }
 .lightbox-overlay.active { display: flex; animation: fadeUp .25s ease-out; }
 .lightbox-content {
   position: relative;
-  max-width: 95vw;
-  max-height: 95vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  margin: auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 90vh;
   cursor: default;
 }
 .lightbox-img {
   width: auto;
   height: auto;
-  max-width: 90vw;
-  max-height: 85vh;
-  border: 1px solid var(--border); border-radius: 4px;
+  max-width: 85vw;
+  max-height: 75vh;
+  border: 1px solid var(--border);
+  border-radius: 4px;
   box-shadow: 0 0 40px rgba(0,0,0,0.9);
   object-fit: contain;
   display: block;
@@ -177,7 +180,7 @@ body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; m
   text-align: center; text-transform: uppercase;
 }
 .lightbox-close {
-  position: absolute; top: -42px; right: 0; background: none; border: none;
+  position: absolute; top: -38px; right: 0; background: none; border: none;
   color: var(--ink); font-size: 2.2rem; cursor: pointer; line-height: 1;
   transition: color .2s ease;
 }
